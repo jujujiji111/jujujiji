@@ -1,327 +1,511 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>モンスト反射練習</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>モンスト反射ガイド</title>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
 *{box-sizing:border-box}
 body{
- margin:0;background:#17191e;color:white;
- font-family:Arial,sans-serif;overflow:hidden;
+ margin:0;background:#111c2c;color:white;
+ font-family:Arial,sans-serif;
+ overflow:hidden;
 }
 #app{
- height:100dvh;display:flex;flex-direction:column;
- align-items:center;gap:7px;padding:7px;
+ height:100dvh;height:100svh;
+ display:flex;flex-direction:column;
+ padding:5px 7px calc(5px + env(safe-area-inset-bottom));
+ gap:5px;
+ max-width:500px;margin:auto;
 }
-h2{font-size:17px;margin:2px}
+header{text-align:center;font-weight:bold;font-size:15px}
 #game{
- width:min(calc(100% - 42px),430px);
- aspect-ratio:418/478;
- max-height:52dvh;flex-shrink:1;
- min-height:150px;
+ width:calc(100% - 2cm);
+ max-width:344px;
+ aspect-ratio:1206/2622;
+ max-height:calc(100% - 190px);
+ margin:auto;
+ background:#101d30;
+ border:2px solid #667b94;
+ position:relative;
+ flex-shrink:1;
+ min-height:0;
 }
-svg{
- width:100%;height:100%;display:block;
- background:#252a33;border:2px solid #858d99;
- border-radius:5px;touch-action:manipulation;
+svg{width:100%;height:100%;display:block;touch-action:none}
+#screenshot{
+ width:100%;height:32px;min-height:32px;
+ border-radius:6px;border:1px solid #9aadc4;
+ background:#263e59;color:white;font-weight:bold;
 }
-.row{
- display:flex;justify-content:center;align-items:center;
- gap:6px;flex-wrap:wrap;width:100%;
-}
+#tools{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
 button{
- background:#343b49;color:white;
- border:1px solid #657084;border-radius:7px;
- padding:8px 12px;font-size:13px;
+ border:1px solid #637c98;border-radius:6px;
+ background:#263e59;color:white;
+ min-height:34px;padding:5px 3px;
+ font-size:12px;font-weight:bold;
 }
-button.active{background:#1769a5;border-color:#65bfff}
-.mode{
- flex:1;max-width:135px;padding:7px 4px;
- font-size:12px;min-height:32px;
+button.active{background:#20cbb0;color:#102c2b}
+.panel{
+ display:flex;flex-direction:column;gap:4px;
+ min-height:0;
 }
-#settings{
- width:min(95%,430px);background:#252a33;
- border-radius:9px;padding:8px;font-size:13px;
+.row{display:flex;gap:5px}
+.row>*{flex:1;min-width:0}
+input[type=number]{width:100%;min-width:0;padding:5px}
+input[type=range]{width:100%}
+#toggles{
+ display:flex;gap:4px;overflow-x:auto;
+ padding-bottom:2px;
 }
-#settings input{width:100%;accent-color:#4aaaff}
-#status{font-size:12px;color:#cbd3df;text-align:center}
+#toggles button{white-space:nowrap;flex-shrink:0}
+#status{
+ text-align:center;font-size:11px;
+ color:#d5e4ef;padding:2px;
+}
+#blockPanel,#anglePanel{display:none}
+#blockPanel.visible,#anglePanel.visible{display:flex}
 #expanded{
- display:none;position:fixed;inset:0;z-index:10;
- background:#17191e;padding:12px;
- flex-direction:column;align-items:center;gap:10px;
+ display:none;position:fixed;inset:0;z-index:20;
+ background:#111c2c;
+ padding:10px;
+ padding-bottom:calc(60px + env(safe-area-inset-bottom));
+ overflow:auto;
 }
-#expanded #game{
- width:min(88vw,540px);max-height:75dvh;
- flex:1;aspect-ratio:418/478;
+#expanded.visible{display:block}
+#expandedContent{
+ width:100%;max-width:500px;margin:auto;
+}
+#expandedContent #game{
+ width:min(100%,380px);
+ max-height:none;
+ margin:10px auto;
 }
 #back{
- position:absolute;bottom:12px;left:12px;
- min-width:75px;
+ position:fixed;bottom:calc(10px + env(safe-area-inset-bottom));
+ left:12px;z-index:22;
+ width:85px;height:44px;
+ display:none;background:#20cbb0;color:#102c2b;
 }
-#backRight{
- position:absolute;bottom:12px;right:12px;
- min-width:75px;
+#back.visible{display:block}
+#shotPreview{
+ display:none;position:fixed;inset:0;z-index:30;
+ background:#101827;overflow:auto;
+ padding:12px;
 }
-.small{font-size:11px;color:#aeb8c8}
+#shotPreview.visible{display:block}
+#shotImage{width:100%;height:auto;display:block;margin:10px auto}
+#shotPreview button{width:100%;margin-bottom:8px}
+.small{font-size:10px;color:#bac8d8}
 </style>
 </head>
 <body>
 
 <div id="app">
-<h2>モンスト反射練習</h2>
+<header>モンスト反射ガイド</header>
 
-<div class="row">
- <button class="mode active" id="angleMode">角度</button>
- <button class="mode" id="pointMode">発射点</button>
- <button class="mode" id="blockMode">ブロック</button>
-</div>
+<button id="screenshot">▤　1画面スクショ・拡大表示</button>
 
 <div id="game">
-<svg id="field" viewBox="0 0 418 478">
- <rect x="2" y="2" width="414" height="474"
-       fill="#252a33" stroke="#e4e8ee" stroke-width="3"/>
- <g id="blocks">
-  <rect x="110" y="110" width="110" height="7" rx="2" fill="#929ba8"/>
-  <rect x="270" y="205" width="7" height="90" rx="2" fill="#929ba8"/>
-  <rect x="75" y="355" width="120" height="7" rx="2" fill="#929ba8"/>
- </g>
- <polyline id="ray" fill="none" stroke="#ff5555"
-           stroke-width="2.5" stroke-linejoin="round"/>
- <line id="aim" stroke="#46baff" stroke-width="2"
-       stroke-dasharray="6 5"/>
- <circle id="launch" r="7" fill="#39aaff" stroke="white" stroke-width="1.5"/>
- <circle id="launchRing" r="12" fill="none"
-         stroke="#39aaff" stroke-width="1" stroke-dasharray="3 3"/>
+<svg id="svg" viewBox="0 0 1206 2622">
+<path id="wall" d="M44 502H1162V1762H44Z"
+ fill="none" stroke="#50d9d5" stroke-width="4"/>
+<path id="widthLine" fill="none" stroke="white"
+ stroke-opacity=".35" stroke-width="105"/>
+<path id="path" fill="none" stroke="black" stroke-width="5"/>
+<path id="extension" fill="none" stroke="black" stroke-width="5"/>
+<path id="redLine" fill="none" stroke="red" stroke-width="5"/>
+<g id="blocks"></g>
+<g id="marks"></g>
+<circle id="launch" r="89.7" fill="#00b9d5"
+ stroke="#087e96" stroke-width="5"/>
+<circle id="center" r="5" fill="white"/>
 </svg>
 </div>
 
-<div id="settings">
- <div class="row" style="justify-content:space-between">
-  <span id="settingTitle">発射角度</span>
-  <strong id="angleText">45°</strong>
- </div>
- <input id="angle" type="range" min="1" max="359" value="45">
- <div class="row">
-  <button id="fire">発射</button>
-  <button id="reset">リセット</button>
-  <button id="deleteBlock">最後のブロックを削除</button>
- </div>
+<div id="status">発射点を設定してください</div>
+
+<div id="tools">
+<button id="pos" class="active">◎ 発射点</button>
+<button id="ang">↗ 角度</button>
+<button id="blk">□ ブロック</button>
 </div>
 
-<div id="status">角度を調整して発射してください。</div>
+<div id="anglePanel" class="panel">
+<div class="row">
+<button id="angMinus">−0.35°</button>
+<input id="angle" type="number" value="63.63" step=".35">
+<button id="angPlus">＋0.35°</button>
+</div>
+<input id="slider" type="range" min="0" max="359.65" step=".35" value="63.63">
+</div>
+
+<div id="blockPanel" class="panel">
+<div class="row">
+<button id="add">追加</button>
+<button id="confirm" class="active">確定</button>
+<button id="delete">削除</button>
+</div>
+<div class="small" id="blockInfo">仮ブロックを配置できます</div>
+</div>
 
 <div class="row">
- <button id="expandBtn">画面を拡大する</button>
+<button id="minus">反射回数 −</button>
+<button id="plus">反射回数 ＋</button>
 </div>
-<div class="small">青：発射点　赤：反射ルート　灰色：ブロック</div>
+
+<div id="toggles">
+<button data-toggle="widthLine" class="active">幅 ON</button>
+<button data-toggle="wall" class="active">壁線 ON</button>
+<button data-toggle="marks" class="active">数字 ON</button>
+<button data-toggle="yellow" class="active">黄色円 ON</button>
+<button data-toggle="extension" class="active">延長線 ON</button>
+<button data-toggle="redLine" class="active">赤線 ON</button>
+</div>
+
+<div class="row">
+<button id="lineColor">線：黒</button>
+<button id="reset">リセット</button>
+</div>
 </div>
 
 <div id="expanded">
- <strong>拡大表示</strong>
- <button id="back">← 戻る</button>
- <button id="backRight">戻る →</button>
+<div id="expandedContent"></div>
+</div>
+<button id="back">← 戻る</button>
+
+<div id="shotPreview">
+<button id="closeShot">← 戻る</button>
+<div id="shotMessage" class="small">スクリーンショット</div>
+<img id="shotImage" alt="ゲーム画面のスクリーンショット">
+<button id="download">画像を保存</button>
 </div>
 
 <script>
-const svg=document.getElementById("field");
-const ray=document.getElementById("ray");
-const aim=document.getElementById("aim");
-const launch=document.getElementById("launch");
-const ring=document.getElementById("launchRing");
-const slider=document.getElementById("angle");
-const angleText=document.getElementById("angleText");
-const statusText=document.getElementById("status");
-const blocksGroup=document.getElementById("blocks");
-const game=document.getElementById("game");
-const app=document.getElementById("app");
-const expanded=document.getElementById("expanded");
+(()=>{
+const $=id=>document.getElementById(id);
+const svg=$('svg');
+const B={l:44,r:1162,t:502,b:1762};
+const R=89.7,H=70,N=1024;
 
-let mode="angle";
-let px=60,py=420;
-let angle=45;
-let blocks=[
- {x:110,y:110,w:110,h:7},
- {x:270,y:205,w:7,h:90},
- {x:75,y:355,w:120,h:7}
-];
+let x=591,y=700;
+let angle=63.6328125*Math.PI/180;
+let mode='pos',drag=false,limit=6;
+let blocks=[],pending=null,nextId=1;
+let white=false;
+let toggles={
+ widthLine:true,wall:true,marks:true,
+ yellow:true,extension:true,redLine:true
+};
 
-const L=3,R=415,T=3,B=475;
+const quant=a=>{
+ return (Math.round((((a%(2*Math.PI))+2*Math.PI)%(2*Math.PI))/(2*Math.PI)*N)%N)*2*Math.PI/N;
+};
+const deg=a=>(a*180/Math.PI+360)%360;
 
-function setMode(m){
- mode=m;
- document.querySelectorAll(".mode").forEach(b=>b.classList.remove("active"));
- document.getElementById(m+"Mode").classList.add("active");
- const titles={
-  angle:"発射角度",
-  point:"発射点",
-  block:"ブロック配置"
+function point(e){
+ const r=svg.getBoundingClientRect();
+ return {
+  x:(e.clientX-r.left)/r.width*1206,
+  y:(e.clientY-r.top)/r.height*2622
  };
- document.getElementById("settingTitle").textContent=titles[m];
- statusText.textContent={
-  angle:"角度を調整してください。",
-  point:"フィールドをタップして発射点を移動します。",
-  block:"フィールドをタップしてブロックを追加します。"
- }[m];
-}
-document.getElementById("angleMode").onclick=()=>setMode("angle");
-document.getElementById("pointMode").onclick=()=>setMode("point");
-document.getElementById("blockMode").onclick=()=>setMode("block");
-
-function position(e){
- const p=svg.createSVGPoint();
- p.x=e.clientX;p.y=e.clientY;
- return p.matrixTransform(svg.getScreenCTM().inverse());
 }
 
-svg.addEventListener("click",e=>{
- const p=position(e);
- if(mode==="point"){
-  px=Math.max(L+10,Math.min(R-10,p.x));
-  py=Math.max(T+10,Math.min(B-10,p.y));
- }else if(mode==="block"){
-  const x=Math.max(L,Math.min(R-35,p.x-17));
-  const y=Math.max(T,Math.min(B-18,p.y-4));
-  blocks.push({x,y,w:35,h:8});
- }
- draw();
-});
-
-slider.addEventListener("input",()=>{
- angle=Number(slider.value);
- angleText.textContent=angle+"°";
- draw();
-});
-
-function wallHit(x,y,dx,dy){
- let best=Infinity,nx=0,ny=0;
- if(dx>0){
-  const t=(R-x)/dx;
-  if(t>0&&t<best){best=t;nx=-1;ny=0;}
- }
- if(dx<0){
-  const t=(L-x)/dx;
-  if(t>0&&t<best){best=t;nx=1;ny=0;}
- }
- if(dy>0){
-  const t=(B-y)/dy;
-  if(t>0&&t<best){best=t;nx=0;ny=-1;}
- }
- if(dy<0){
-  const t=(T-y)/dy;
-  if(t>0&&t<best){best=t;nx=0;ny=1;}
- }
- return {t:best,nx,ny};
+function wallHit(px,py,dx,dy){
+ let tx=dx>1e-10?(B.r-px)/dx:dx< -1e-10?(B.l-px)/dx:Infinity;
+ let ty=dy>1e-10?(B.b-py)/dy:dy< -1e-10?(B.t-py)/dy:Infinity;
+ let t=Math.min(tx,ty);
+ if(!isFinite(t)||t<1e-7)return null;
+ let corner=Math.abs(tx-ty)<1e-7;
+ return {
+  t,x:px+dx*t,y:py+dy*t,
+  nx:corner?(dx>0?-1:1):tx<ty?(dx>0?-1:1):0,
+  ny:corner?(dy>0?-1:1):tx<ty?0:(dy>0?-1:1)
+ };
 }
 
-function blockHit(x,y,dx,dy){
- let best=Infinity,nx=0,ny=0;
- for(const b of blocks){
-  const sides=[
-   {t:(b.x-x)/dx,nx:-1,ny:0,ok:dx>0},
-   {t:(b.x+b.w-x)/dx,nx:1,ny:0,ok:dx<0},
-   {t:(b.y-y)/dy,nx:0,ny:-1,ok:dy>0},
-   {t:(b.y+b.h-y)/dy,nx:0,ny:1,ok:dy<0}
-  ];
-  for(const s of sides){
-   if(!s.ok||!Number.isFinite(s.t)||s.t<=0||s.t>=best)continue;
-   const hx=x+dx*s.t;
-   const hy=y+dy*s.t;
-   if(hx>=b.x-0.01&&hx<=b.x+b.w+0.01&&
-      hy>=b.y-0.01&&hy<=b.y+b.h+0.01){
-    best=s.t;nx=s.nx;ny=s.ny;
-   }
+function blockHit(px,py,dx,dy,b){
+ const l=b.x-H-R,r=b.x+H+R;
+ const t=b.y-H-R,bt=b.y+H+R;
+ let hits=[];
+ function add(q,nx,ny,ok){
+  if(q>1e-7&&ok)hits.push({t:q,nx,ny});
+ }
+ if(Math.abs(dx)>1e-10){
+  for(const xx of [l,r]){
+   let q=(xx-px)/dx,yy=py+dy*q;
+   add(q,xx===l?-1:1,0,yy>=t&&yy<=bt);
   }
  }
- return {t:best,nx,ny};
+ if(Math.abs(dy)>1e-10){
+  for(const yy of [t,bt]){
+   let q=(yy-py)/dy,xx=px+dx*q;
+   add(q,0,yy===t?-1:1,xx>=l&&xx<=r);
+  }
+ }
+ hits.sort((a,b)=>a.t-b.t);
+ return hits[0]||null;
 }
 
-function calculate(){
- let rad=angle*Math.PI/180;
- let dx=Math.cos(rad);
- let dy=-Math.sin(rad);
- let x=px,y=py;
- let points=[[x,y]];
- let count=0;
- for(let i=0;i<30;i++){
-  const wh=wallHit(x,y,dx,dy);
-  const bh=blockHit(x,y,dx,dy);
-  const hit=bh.t<wh.t?bh:wh;
-  if(!Number.isFinite(hit.t)||hit.t===Infinity)break;
-  x+=dx*hit.t;
-  y+=dy*hit.t;
-  points.push([x,y]);
-  count++;
-  if(hit.nx)dx=-dx;
-  if(hit.ny)dy=-dy;
-  x+=dx*0.03;
-  y+=dy*0.03;
+function trace(){
+ let px=x,py=y,dx=Math.cos(angle),dy=Math.sin(angle);
+ let d=`M${x} ${y}`,hits=[];
+ for(let i=1;i<=limit;i++){
+  let h=wallHit(px,py,dx,dy);
+  for(const b of blocks){
+   const z=blockHit(px,py,dx,dy,b);
+   if(z&&(!h||z.t<h.t))h=z;
+  }
+  if(!h)break;
+  h.x=px+dx*h.t;
+  h.y=py+dy*h.t;
+  h.n=i;
+  d+=` L${h.x} ${h.y}`;
+  hits.push({...h,dx,dy});
+  const dot=dx*h.nx+dy*h.ny;
+  dx-=2*dot*h.nx;
+  dy-=2*dot*h.ny;
+  px=h.x+dx*.02;
+  py=h.y+dy*.02;
  }
- return {points,count};
+ return {d,hits};
 }
 
 function draw(){
- launch.setAttribute("cx",px);
- launch.setAttribute("cy",py);
- ring.setAttribute("cx",px);
- ring.setAttribute("cy",py);
+ const z=trace();
+ $('path').setAttribute('d',z.d);
+ $('path').setAttribute('stroke',white?'white':'black');
+ $('widthLine').setAttribute('d',z.d);
+ $('widthLine').style.display=toggles.widthLine?'':'none';
+ $('wall').style.display=toggles.wall?'':'none';
+ $('extension').style.display=toggles.extension?'':'none';
+ $('redLine').style.display=toggles.redLine?'':'none';
+ $('redLine').setAttribute('d',
+  `M${x} ${y}L${x-Math.cos(angle)*1800} ${y-Math.sin(angle)*1800}`);
+ $('launch').setAttribute('cx',x);
+ $('launch').setAttribute('cy',y);
+ $('center').setAttribute('cx',x);
+ $('center').setAttribute('cy',y);
 
- const rad=angle*Math.PI/180;
- aim.setAttribute("x1",px);
- aim.setAttribute("y1",py);
- aim.setAttribute("x2",px+Math.cos(rad)*45);
- aim.setAttribute("y2",py-Math.sin(rad)*45);
+ const marks=$('marks');
+ marks.replaceChildren();
 
- blocksGroup.innerHTML="";
- for(const b of blocks){
-  const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
-  r.setAttribute("x",b.x);
-  r.setAttribute("y",b.y);
-  r.setAttribute("width",b.w);
-  r.setAttribute("height",b.h);
-  r.setAttribute("rx",2);
-  r.setAttribute("fill","#929ba8");
-  blocksGroup.appendChild(r);
+ if(z.hits.length&&toggles.extension){
+  const h=z.hits[0];
+  const d=Math.hypot(h.dx,h.dy);
+  const q=2000;
+  $('extension').setAttribute('d',
+   `M${h.x} ${h.y}L${h.x+h.dx*q} ${h.y+h.dy*q}`);
  }
 
- const result=calculate();
- ray.setAttribute("points",result.points.map(p=>p.join(",")).join(" "));
- document.getElementById("count").textContent=result.count;
- statusText.textContent="予測反射回数："+result.count+"回";
+ z.hits.forEach(h=>{
+  if(toggles.yellow){
+   const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+   c.setAttribute('cx',h.x);
+   c.setAttribute('cy',h.y);
+   c.setAttribute('r',14);
+   c.setAttribute('fill','#ffdf27');
+   marks.append(c);
+  }
+  if(toggles.marks){
+   const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+   t.setAttribute('x',h.x);
+   t.setAttribute('y',h.y-18);
+   t.setAttribute('font-size',36);
+   t.setAttribute('fill','white');
+   t.setAttribute('stroke','#333');
+   t.setAttribute('stroke-width',3);
+   t.setAttribute('paint-order','stroke');
+   t.textContent=h.n;
+   marks.append(t);
+  }
+ });
+
+ $('blocks').replaceChildren();
+ [...blocks,...(pending?[pending]:[])].forEach(b=>{
+  const r=document.createElementNS('http://www.w3.org/2000/svg','rect');
+  r.setAttribute('x',b.x-H);
+  r.setAttribute('y',b.y-H);
+  r.setAttribute('width',140);
+  r.setAttribute('height',140);
+  r.setAttribute('fill','#ff7777');
+  r.setAttribute('fill-opacity','.5');
+  r.setAttribute('stroke','#ed4444');
+  r.setAttribute('stroke-width',7);
+  if(!b.fixed)r.setAttribute('stroke-dasharray','9 6');
+  $('blocks').append(r);
+ });
+
+ $('status').textContent=
+  `発射点 (${Math.round(x)},${Math.round(y)})　角度 ${deg(angle).toFixed(2)}°　反射 ${z.hits.length}回`;
+ $('blockInfo').textContent=pending?
+  `仮ブロック ${pending.id}（未確定）`:
+  `固定ブロック ${blocks.length}個`;
+ $('angle').value=deg(angle).toFixed(2);
+ $('slider').value=deg(angle);
 }
 
-document.getElementById("fire").onclick=()=>{
- const result=calculate();
- statusText.textContent="発射！ 反射回数："+result.count+"回";
-};
+function setMode(m){
+ mode=m;
+ ['pos','ang','blk'].forEach(id=>$(id).classList.toggle('active',id===m));
+ $('anglePanel').classList.toggle('visible',m==='ang');
+ $('blockPanel').classList.toggle('visible',m==='blk');
+ if(m==='blk'&&!pending){
+  pending={id:nextId++,x:375,y:1405,fixed:false};
+ }
+ draw();
+}
 
-document.getElementById("reset").onclick=()=>{
- px=60;py=420;angle=45;
- slider.value=45;
- angleText.textContent="45°";
+$('pos').onclick=()=>setMode('pos');
+$('ang').onclick=()=>setMode('ang');
+$('blk').onclick=()=>setMode('blk');
+
+svg.addEventListener('pointerdown',e=>{
+ const p=point(e);
+ if(mode==='blk'){
+  if(!pending)return;
+  drag=true;
+  svg.setPointerCapture(e.pointerId);
+  moveBlock(p);
+  return;
+ }
+ if(mode==='pos'){
+  x=p.x;y=p.y;
+ }else{
+  angle=quant(Math.atan2(p.y-y,p.x-x));
+ }
+ drag=true;
+ svg.setPointerCapture(e.pointerId);
+ draw();
+});
+function moveBlock(p){
+ if(!pending)return;
+ pending.x=Math.max(B.l+H,Math.min(B.r-H,p.x));
+ pending.y=Math.max(B.t+H,Math.min(B.b-H,p.y));
+ draw();
+}
+svg.addEventListener('pointermove',e=>{
+ if(!drag)return;
+ const p=point(e);
+ if(mode==='pos'){
+  x=Math.max(B.l,Math.min(B.r,p.x));
+  y=Math.max(B.t,Math.min(B.b,p.y));
+ }else if(mode==='ang'){
+  angle=quant(Math.atan2(p.y-y,p.x-x));
+ }else moveBlock(p);
+ draw();
+});
+svg.addEventListener('pointerup',()=>drag=false);
+svg.addEventListener('pointercancel',()=>drag=false);
+
+$('angle').onchange=()=>{angle=quant(Number($('angle').value)*Math.PI/180);draw()};
+$('slider').oninput=()=>{angle=quant(Number($('slider').value)*Math.PI/180);draw()};
+$('angMinus').onclick=()=>{angle=quant(angle-.3515625*Math.PI/180);draw()};
+$('angPlus').onclick=()=>{angle=quant(angle+.3515625*Math.PI/180);draw()};
+
+$('minus').onclick=()=>{limit=Math.max(0,limit-1);draw()};
+$('plus').onclick=()=>{limit=Math.min(50,limit+1);draw()};
+
+$('add').onclick=()=>{
+ if(pending)return;
+ pending={id:nextId++,x:375,y:1405,fixed:false};
+ draw();
+};
+$('confirm').onclick=()=>{
+ if(!pending)return;
+ pending.fixed=true;
+ blocks.push(pending);
+ pending=null;
+ draw();
+};
+$('delete').onclick=()=>{
+ if(pending){
+  pending=null;
+ }else if(blocks.length){
+  blocks.pop();
+ }
  draw();
 };
 
-document.getElementById("deleteBlock").onclick=()=>{
- if(blocks.length)blocks.pop();
+document.querySelectorAll('[data-toggle]').forEach(b=>{
+ b.onclick=()=>{
+  const id=b.dataset.toggle;
+  toggles[id]=!toggles[id];
+  b.textContent=({
+   widthLine:'幅',wall:'壁線',marks:'数字',
+   yellow:'黄色円',extension:'延長線',redLine:'赤線'
+  })[id]+' '+(toggles[id]?'ON':'OFF');
+  b.classList.toggle('active',toggles[id]);
+  draw();
+ };
+});
+
+$('lineColor').onclick=()=>{
+ white=!white;
+ $('lineColor').textContent='線：'+(white?'白':'黒');
  draw();
 };
 
-document.getElementById("expandBtn").onclick=()=>{
- expanded.style.display="flex";
- expanded.appendChild(game);
+$('reset').onclick=()=>{
+ x=591;y=700;angle=rad(63.63);
+ blocks=[];pending=null;limit=6;
+ draw();
 };
 
-function back(){
- expanded.style.display="none";
- app.insertBefore(game,document.getElementById("settings"));
+function rad(v){return v*Math.PI/180}
+
+/* 画面拡大 */
+const app=$('app'),expanded=$('expanded');
+const expandedContent=$('expandedContent');
+let expandedMode=false;
+
+$('screenshot').onclick=()=>{
+ expandedMode=true;
+ expandedContent.appendChild(app);
+ expanded.classList.add('visible');
+ $('back').classList.add('visible');
+ $('screenshot').textContent='▤ スクリーンショットを作成';
+ $('screenshot').onclick=makeScreenshot;
+};
+$('back').onclick=()=>{
+ if(!expandedMode)return;
+ expandedMode=false;
+ $('app').before(app);
+ expanded.classList.remove('visible');
+ $('back').classList.remove('visible');
+ $('screenshot').textContent='▤ 1画面スクショ・拡大表示';
+ $('screenshot').onclick=()=>{
+  expandedMode=true;
+  expandedContent.appendChild(app);
+  expanded.classList.add('visible');
+  $('back').classList.add('visible');
+  $('screenshot').onclick=makeScreenshot;
+ };
+};
+
+async function makeScreenshot(){
+ if(!window.html2canvas){
+  alert('スクリーンショット機能の読み込みに失敗しました。通信環境を確認してください。');
+  return;
+ }
+ const canvas=await html2canvas(app,{
+  backgroundColor:'#111c2c',
+  scale:2,
+  useCORS:true
+ });
+ $('shotImage').src=canvas.toDataURL('image/png');
+ $('shotPreview').classList.add('visible');
 }
-document.getElementById("back").onclick=back;
-document.getElementById("backRight").onclick=back;
+$('closeShot').onclick=()=>$('shotPreview').classList.remove('visible');
+$('download').onclick=()=>{
+ const a=document.createElement('a');
+ a.href=$('shotImage').src;
+ a.download='monst-reflection-guide.png';
+ a.click();
+};
 
 draw();
+})();
 </script>
 </body>
 </html>
-
