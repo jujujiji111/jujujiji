@@ -4,508 +4,681 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>モンスト反射ガイド</title>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
 <style>
-*{box-sizing:border-box}
-body{
- margin:0;background:#111c2c;color:white;
- font-family:Arial,sans-serif;
- overflow:hidden;
+* {
+  box-sizing: border-box;
 }
-#app{
- height:100dvh;height:100svh;
- display:flex;flex-direction:column;
- padding:5px 7px calc(5px + env(safe-area-inset-bottom));
- gap:5px;
- max-width:500px;margin:auto;
+
+body {
+  margin: 0;
+  background: #17191e;
+  color: white;
+  font-family: sans-serif;
+  overflow-x: hidden;
 }
-header{text-align:center;font-weight:bold;font-size:15px}
-#game{
- width:calc(100% - 2cm);
- max-width:344px;
- aspect-ratio:1206/2622;
- max-height:calc(100% - 190px);
- margin:auto;
- background:#101d30;
- border:2px solid #667b94;
- position:relative;
- flex-shrink:1;
- min-height:0;
+
+#app {
+  width: 100%;
+  max-width: 900px;
+  margin: auto;
+  padding: 10px;
 }
-svg{width:100%;height:100%;display:block;touch-action:none}
-#screenshot{
- width:100%;height:32px;min-height:32px;
- border-radius:6px;border:1px solid #9aadc4;
- background:#263e59;color:white;font-weight:bold;
+
+h2 {
+  text-align: center;
+  margin: 8px 0 12px;
 }
-#tools{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
-button{
- border:1px solid #637c98;border-radius:6px;
- background:#263e59;color:white;
- min-height:34px;padding:5px 3px;
- font-size:12px;font-weight:bold;
+
+#board {
+  width: 100%;
+  display: block;
+  background: #292d35;
+  border: 2px solid #555;
+  border-radius: 8px;
+  touch-action: none;
 }
-button.active{background:#20cbb0;color:#102c2b}
-.panel{
- display:flex;flex-direction:column;gap:4px;
- min-height:0;
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  justify-content: center;
 }
-.row{display:flex;gap:5px}
-.row>*{flex:1;min-width:0}
-input[type=number]{width:100%;min-width:0;padding:5px}
-input[type=range]{width:100%}
-#toggles{
- display:flex;gap:4px;overflow-x:auto;
- padding-bottom:2px;
+
+button, select {
+  border: 1px solid #777;
+  border-radius: 7px;
+  padding: 10px 14px;
+  background: #e5e5e5;
+  color: black;
+  font-size: 14px;
+  font-weight: bold;
 }
-#toggles button{white-space:nowrap;flex-shrink:0}
-#status{
- text-align:center;font-size:11px;
- color:#d5e4ef;padding:2px;
+
+button:active {
+  background: #aaa;
 }
-#blockPanel,#anglePanel{display:none}
-#blockPanel.visible,#anglePanel.visible{display:flex}
-#expanded{
- display:none;position:fixed;inset:0;z-index:20;
- background:#111c2c;
- padding:10px;
- padding-bottom:calc(60px + env(safe-area-inset-bottom));
- overflow:auto;
+
+button.active {
+  background: #333;
+  color: white;
 }
-#expanded.visible{display:block}
-#expandedContent{
- width:100%;max-width:500px;margin:auto;
+
+.info {
+  text-align: center;
+  margin-top: 10px;
+  color: #ddd;
+  font-size: 13px;
 }
-#expandedContent #game{
- width:min(100%,380px);
- max-height:none;
- margin:10px auto;
+
+.reflection-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 10px;
 }
-#back{
- position:fixed;bottom:calc(10px + env(safe-area-inset-bottom));
- left:12px;z-index:22;
- width:85px;height:44px;
- display:none;background:#20cbb0;color:#102c2b;
+
+.reflection-control button {
+  min-width: 45px;
+  font-size: 20px;
 }
-#back.visible{display:block}
-#shotPreview{
- display:none;position:fixed;inset:0;z-index:30;
- background:#101827;overflow:auto;
- padding:12px;
+
+#reflectionCount {
+  min-width: 90px;
+  text-align: center;
+  font-weight: bold;
 }
-#shotPreview.visible{display:block}
-#shotImage{width:100%;height:auto;display:block;margin:10px auto}
-#shotPreview button{width:100%;margin-bottom:8px}
-.small{font-size:10px;color:#bac8d8}
 </style>
 </head>
+
 <body>
-
 <div id="app">
-<header>モンスト反射ガイド</header>
 
-<button id="screenshot">▤　1画面スクショ・拡大表示</button>
+<h2>モンスト反射ガイド</h2>
 
-<div id="game">
-<svg id="svg" viewBox="0 0 1206 2622">
-<path id="wall" d="M44 502H1162V1762H44Z"
- fill="none" stroke="#50d9d5" stroke-width="4"/>
-<path id="widthLine" fill="none" stroke="white"
- stroke-opacity=".35" stroke-width="105"/>
-<path id="path" fill="none" stroke="black" stroke-width="5"/>
-<path id="extension" fill="none" stroke="black" stroke-width="5"/>
-<path id="redLine" fill="none" stroke="red" stroke-width="5"/>
+<svg id="board" viewBox="0 0 1206 2622">
+
+<defs>
+  <clipPath id="boardClip">
+    <rect x="0" y="0" width="1206" height="2622"/>
+  </clipPath>
+</defs>
+
+<g clip-path="url(#boardClip)">
+
+<!-- 背景 -->
+<rect width="1206" height="2622" fill="#292d35"/>
+
+<!-- 壁 -->
+<rect id="wall"
+      x="44" y="502"
+      width="1118" height="1260"
+      fill="none"
+      stroke="#aaa"
+      stroke-width="8"/>
+
+<!-- 軌道の白い外側 -->
+<polyline id="pathBorder"
+          fill="none"
+          stroke="white"
+          stroke-width="109.1"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+
+<!-- 軌道 -->
+<polyline id="pathBand"
+          fill="none"
+          stroke="#45d9ff"
+          stroke-opacity="0.5"
+          stroke-width="105.1"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+
+<!-- 軌道中央線 -->
+<polyline id="pathLine"
+          fill="none"
+          stroke="black"
+          stroke-width="5"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+
+<!-- 延長線 -->
+<line id="extension"
+      stroke="white"
+      stroke-width="4"
+      stroke-dasharray="none"
+      opacity="0.8"/>
+
+<!-- 反射位置 -->
+<g id="bouncePoints"></g>
+
+<!-- ブロック -->
 <g id="blocks"></g>
-<g id="marks"></g>
-<circle id="launch" r="89.7" fill="#00b9d5"
- stroke="#087e96" stroke-width="5"/>
-<circle id="center" r="5" fill="white"/>
+
+<!-- 発射円 -->
+<circle id="launchCircle"
+        cx="603"
+        cy="1132"
+        r="89.7"
+        fill="#45d9ff"
+        fill-opacity="0.5"
+        stroke="white"
+        stroke-width="4"/>
+
+<!-- 発射円中心 -->
+<circle id="launchOuter"
+        cx="603" cy="1132"
+        r="15"
+        fill="white"/>
+
+<circle id="launchMiddle"
+        cx="603" cy="1132"
+        r="10"
+        fill="black"/>
+
+<circle id="launchInner"
+        cx="603" cy="1132"
+        r="5"
+        fill="#45d9ff"/>
+
+<!-- 狙い方向のハンドル -->
+<line id="aimLine"
+      stroke="#fff"
+      stroke-width="5"/>
+
+<circle id="aimHandle"
+        r="18"
+        fill="#ffdc36"
+        stroke="white"
+        stroke-width="4"/>
+
+</g>
 </svg>
+
+<div class="reflection-control">
+  <button id="minus">－</button>
+  <span id="reflectionCount">反射 6回</span>
+  <button id="plus">＋</button>
 </div>
 
-<div id="status">発射点を設定してください</div>
-
-<div id="tools">
-<button id="pos" class="active">◎ 発射点</button>
-<button id="ang">↗ 角度</button>
-<button id="blk">□ ブロック</button>
+<div class="controls">
+  <button id="addBlock">ブロック追加</button>
+  <button id="fixBlock">固定</button>
+  <button id="deleteBlock">削除</button>
 </div>
 
-<div id="anglePanel" class="panel">
-<div class="row">
-<button id="angMinus">−0.35°</button>
-<input id="angle" type="number" value="63.63" step=".35">
-<button id="angPlus">＋0.35°</button>
-</div>
-<input id="slider" type="range" min="0" max="359.65" step=".35" value="63.63">
+<div class="controls">
+  <button id="wallToggle" class="active">壁 ON</button>
+  <button id="colorToggle">軌道色変更</button>
+  <button id="reset">リセット</button>
 </div>
 
-<div id="blockPanel" class="panel">
-<div class="row">
-<button id="add">追加</button>
-<button id="confirm" class="active">確定</button>
-<button id="delete">削除</button>
-</div>
-<div class="small" id="blockInfo">仮ブロックを配置できます</div>
+<div class="info">
+  発射円をドラッグ：発射位置変更<br>
+  黄色い丸をドラッグ：発射角度変更<br>
+  ブロックをタップ：選択・移動
 </div>
 
-<div class="row">
-<button id="minus">反射回数 −</button>
-<button id="plus">反射回数 ＋</button>
-</div>
-
-<div id="toggles">
-<button data-toggle="widthLine" class="active">幅 ON</button>
-<button data-toggle="wall" class="active">壁線 ON</button>
-<button data-toggle="marks" class="active">数字 ON</button>
-<button data-toggle="yellow" class="active">黄色円 ON</button>
-<button data-toggle="extension" class="active">延長線 ON</button>
-<button data-toggle="redLine" class="active">赤線 ON</button>
-</div>
-
-<div class="row">
-<button id="lineColor">線：黒</button>
-<button id="reset">リセット</button>
-</div>
-</div>
-
-<div id="expanded">
-<div id="expandedContent"></div>
-</div>
-<button id="back">← 戻る</button>
-
-<div id="shotPreview">
-<button id="closeShot">← 戻る</button>
-<div id="shotMessage" class="small">スクリーンショット</div>
-<img id="shotImage" alt="ゲーム画面のスクリーンショット">
-<button id="download">画像を保存</button>
 </div>
 
 <script>
-(()=>{
-const $=id=>document.getElementById(id);
-const svg=$('svg');
-const B={l:44,r:1162,t:502,b:1762};
-const R=89.7,H=70,N=1024;
+const svg = document.getElementById("board");
 
-let x=591,y=700;
-let angle=63.6328125*Math.PI/180;
-let mode='pos',drag=false,limit=6;
-let blocks=[],pending=null,nextId=1;
-let white=false;
-let toggles={
- widthLine:true,wall:true,marks:true,
- yellow:true,extension:true,redLine:true
+const NS = "http://www.w3.org/2000/svg";
+
+const WALL = {
+  left: 44,
+  right: 1162,
+  top: 502,
+  bottom: 1762
 };
 
-const quant=a=>{
- return (Math.round((((a%(2*Math.PI))+2*Math.PI)%(2*Math.PI))/(2*Math.PI)*N)%N)*2*Math.PI/N;
-};
-const deg=a=>(a*180/Math.PI+360)%360;
+const PATH_WIDTH = 105.1;
+const PATH_RADIUS = PATH_WIDTH / 2;
 
-function point(e){
- const r=svg.getBoundingClientRect();
- return {
-  x:(e.clientX-r.left)/r.width*1206,
-  y:(e.clientY-r.top)/r.height*2622
- };
+const MONSTER_RADIUS = 70;
+const COLLISION_RADIUS = MONSTER_RADIUS + PATH_RADIUS;
+
+let launch = { x: 603, y: 1132 };
+let angle = -45;
+let reflectionLimit = 6;
+
+let blocks = [];
+let selectedBlock = -1;
+let dragging = null;
+let wallEnabled = true;
+let whitePath = false;
+
+const pathBorder = document.getElementById("pathBorder");
+const pathBand = document.getElementById("pathBand");
+const pathLine = document.getElementById("pathLine");
+const extension = document.getElementById("extension");
+const bouncePoints = document.getElementById("bouncePoints");
+const blocksGroup = document.getElementById("blocks");
+
+function pointFromEvent(e) {
+  const p = svg.createSVGPoint();
+  p.x = e.clientX;
+  p.y = e.clientY;
+  return p.matrixTransform(svg.getScreenCTM().inverse());
 }
 
-function wallHit(px,py,dx,dy){
- let tx=dx>1e-10?(B.r-px)/dx:dx< -1e-10?(B.l-px)/dx:Infinity;
- let ty=dy>1e-10?(B.b-py)/dy:dy< -1e-10?(B.t-py)/dy:Infinity;
- let t=Math.min(tx,ty);
- if(!isFinite(t)||t<1e-7)return null;
- let corner=Math.abs(tx-ty)<1e-7;
- return {
-  t,x:px+dx*t,y:py+dy*t,
-  nx:corner?(dx>0?-1:1):tx<ty?(dx>0?-1:1):0,
-  ny:corner?(dy>0?-1:1):tx<ty?0:(dy>0?-1:1)
- };
+function setPosition(el, x, y) {
+  el.setAttribute("cx", x);
+  el.setAttribute("cy", y);
 }
 
-function blockHit(px,py,dx,dy,b){
- const l=b.x-H-R,r=b.x+H+R;
- const t=b.y-H-R,bt=b.y+H+R;
- let hits=[];
- function add(q,nx,ny,ok){
-  if(q>1e-7&&ok)hits.push({t:q,nx,ny});
- }
- if(Math.abs(dx)>1e-10){
-  for(const xx of [l,r]){
-   let q=(xx-px)/dx,yy=py+dy*q;
-   add(q,xx===l?-1:1,0,yy>=t&&yy<=bt);
+function distance(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function normalize(x, y) {
+  const d = Math.hypot(x, y) || 1;
+  return { x: x / d, y: y / d };
+}
+
+function reflect(v, n) {
+  const dot = v.x * n.x + v.y * n.y;
+  return {
+    x: v.x - 2 * dot * n.x,
+    y: v.y - 2 * dot * n.y
+  };
+}
+
+function rayCircle(origin, dir, center, radius) {
+  const ox = origin.x - center.x;
+  const oy = origin.y - center.y;
+
+  const b = ox * dir.x + oy * dir.y;
+  const c = ox * ox + oy * oy - radius * radius;
+
+  const discriminant = b * b - c;
+
+  if (discriminant < 0) return null;
+
+  const t = -b - Math.sqrt(discriminant);
+
+  if (t <= 0.01) return null;
+
+  return {
+    t,
+    x: origin.x + dir.x * t,
+    y: origin.y + dir.y * t
+  };
+}
+
+function rayWall(origin, dir) {
+  let hits = [];
+
+  if (dir.x > 0) {
+    const t = (WALL.right - origin.x) / dir.x;
+    if (t > 0.01) hits.push({
+      t, x: WALL.right, y: origin.y + dir.y * t,
+      nx: -1, ny: 0
+    });
   }
- }
- if(Math.abs(dy)>1e-10){
-  for(const yy of [t,bt]){
-   let q=(yy-py)/dy,xx=px+dx*q;
-   add(q,0,yy===t?-1:1,xx>=l&&xx<=r);
+
+  if (dir.x < 0) {
+    const t = (WALL.left - origin.x) / dir.x;
+    if (t > 0.01) hits.push({
+      t, x: WALL.left, y: origin.y + dir.y * t,
+      nx: 1, ny: 0
+    });
   }
- }
- hits.sort((a,b)=>a.t-b.t);
- return hits[0]||null;
+
+  if (dir.y > 0) {
+    const t = (WALL.bottom - origin.y) / dir.y;
+    if (t > 0.01) hits.push({
+      t, x: origin.x + dir.x * t, y: WALL.bottom,
+      nx: 0, ny: -1
+    });
+  }
+
+  if (dir.y < 0) {
+    const t = (WALL.top - origin.y) / dir.y;
+    if (t > 0.01) hits.push({
+      t, x: origin.x + dir.x * t, y: WALL.top,
+      nx: 0, ny: 1
+    });
+  }
+
+  hits = hits.filter(h =>
+    h.x >= WALL.left - 1 &&
+    h.x <= WALL.right + 1 &&
+    h.y >= WALL.top - 1 &&
+    h.y <= WALL.bottom + 1
+  );
+
+  hits.sort((a, b) => a.t - b.t);
+
+  return hits[0] || null;
 }
 
-function trace(){
- let px=x,py=y,dx=Math.cos(angle),dy=Math.sin(angle);
- let d=`M${x} ${y}`,hits=[];
- for(let i=1;i<=limit;i++){
-  let h=wallHit(px,py,dx,dy);
-  for(const b of blocks){
-   const z=blockHit(px,py,dx,dy,b);
-   if(z&&(!h||z.t<h.t))h=z;
+function tracePath() {
+  let points = [{ x: launch.x, y: launch.y }];
+  let bounces = [];
+
+  let dir = {
+    x: Math.cos(angle * Math.PI / 180),
+    y: Math.sin(angle * Math.PI / 180)
+  };
+
+  let origin = { ...launch };
+
+  for (let i = 0; i < reflectionLimit; i++) {
+    let wallHit = wallEnabled ? rayWall(origin, dir) : null;
+
+    let blockHit = null;
+    let hitBlockIndex = -1;
+
+    blocks.forEach((block, index) => {
+      const hit = rayCircle(
+        origin,
+        dir,
+        block,
+        COLLISION_RADIUS
+      );
+
+      if (hit && (!blockHit || hit.t < blockHit.t)) {
+        blockHit = hit;
+        hitBlockIndex = index;
+      }
+    });
+
+    let hit = null;
+    let normal = null;
+
+    if (wallHit && (!blockHit || wallHit.t < blockHit.t)) {
+      hit = wallHit;
+      normal = { x: wallHit.nx, y: wallHit.ny };
+    } else if (blockHit) {
+      hit = blockHit;
+
+      const block = blocks[hitBlockIndex];
+      normal = normalize(
+        hit.x - block.x,
+        hit.y - block.y
+      );
+    }
+
+    if (!hit) {
+      let end = {
+        x: origin.x + dir.x * 3000,
+        y: origin.y + dir.y * 3000
+      };
+
+      points.push(end);
+      break;
+    }
+
+    points.push({ x: hit.x, y: hit.y });
+    bounces.push({ x: hit.x, y: hit.y });
+
+    dir = normalize(
+      reflect(dir, normal).x,
+      reflect(dir, normal).y
+    );
+
+    origin = {
+      x: hit.x + dir.x * 0.5,
+      y: hit.y + dir.y * 0.5
+    };
   }
-  if(!h)break;
-  h.x=px+dx*h.t;
-  h.y=py+dy*h.t;
-  h.n=i;
-  d+=` L${h.x} ${h.y}`;
-  hits.push({...h,dx,dy});
-  const dot=dx*h.nx+dy*h.ny;
-  dx-=2*dot*h.nx;
-  dy-=2*dot*h.ny;
-  px=h.x+dx*.02;
-  py=h.y+dy*.02;
- }
- return {d,hits};
+
+  return { points, bounces };
 }
 
-function draw(){
- const z=trace();
- $('path').setAttribute('d',z.d);
- $('path').setAttribute('stroke',white?'white':'black');
- $('widthLine').setAttribute('d',z.d);
- $('widthLine').style.display=toggles.widthLine?'':'none';
- $('wall').style.display=toggles.wall?'':'none';
- $('extension').style.display=toggles.extension?'':'none';
- $('redLine').style.display=toggles.redLine?'':'none';
- $('redLine').setAttribute('d',
-  `M${x} ${y}L${x-Math.cos(angle)*1800} ${y-Math.sin(angle)*1800}`);
- $('launch').setAttribute('cx',x);
- $('launch').setAttribute('cy',y);
- $('center').setAttribute('cx',x);
- $('center').setAttribute('cy',y);
-
- const marks=$('marks');
- marks.replaceChildren();
-
- if(z.hits.length&&toggles.extension){
-  const h=z.hits[0];
-  const d=Math.hypot(h.dx,h.dy);
-  const q=2000;
-  $('extension').setAttribute('d',
-   `M${h.x} ${h.y}L${h.x+h.dx*q} ${h.y+h.dy*q}`);
- }
-
- z.hits.forEach(h=>{
-  if(toggles.yellow){
-   const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
-   c.setAttribute('cx',h.x);
-   c.setAttribute('cy',h.y);
-   c.setAttribute('r',14);
-   c.setAttribute('fill','#ffdf27');
-   marks.append(c);
-  }
-  if(toggles.marks){
-   const t=document.createElementNS('http://www.w3.org/2000/svg','text');
-   t.setAttribute('x',h.x);
-   t.setAttribute('y',h.y-18);
-   t.setAttribute('font-size',36);
-   t.setAttribute('fill','white');
-   t.setAttribute('stroke','#333');
-   t.setAttribute('stroke-width',3);
-   t.setAttribute('paint-order','stroke');
-   t.textContent=h.n;
-   marks.append(t);
-  }
- });
-
- $('blocks').replaceChildren();
- [...blocks,...(pending?[pending]:[])].forEach(b=>{
-  const r=document.createElementNS('http://www.w3.org/2000/svg','rect');
-  r.setAttribute('x',b.x-H);
-  r.setAttribute('y',b.y-H);
-  r.setAttribute('width',140);
-  r.setAttribute('height',140);
-  r.setAttribute('fill','#ff7777');
-  r.setAttribute('fill-opacity','.5');
-  r.setAttribute('stroke','#ed4444');
-  r.setAttribute('stroke-width',7);
-  if(!b.fixed)r.setAttribute('stroke-dasharray','9 6');
-  $('blocks').append(r);
- });
-
- $('status').textContent=
-  `発射点 (${Math.round(x)},${Math.round(y)})　角度 ${deg(angle).toFixed(2)}°　反射 ${z.hits.length}回`;
- $('blockInfo').textContent=pending?
-  `仮ブロック ${pending.id}（未確定）`:
-  `固定ブロック ${blocks.length}個`;
- $('angle').value=deg(angle).toFixed(2);
- $('slider').value=deg(angle);
+function pointsString(points) {
+  return points.map(p => `${p.x},${p.y}`).join(" ");
 }
 
-function setMode(m){
- mode=m;
- ['pos','ang','blk'].forEach(id=>$(id).classList.toggle('active',id===m));
- $('anglePanel').classList.toggle('visible',m==='ang');
- $('blockPanel').classList.toggle('visible',m==='blk');
- if(m==='blk'&&!pending){
-  pending={id:nextId++,x:375,y:1405,fixed:false};
- }
- draw();
+function drawBlocks() {
+  blocksGroup.innerHTML = "";
+
+  blocks.forEach((b, index) => {
+    const group = document.createElementNS(NS, "g");
+    group.setAttribute("transform", `translate(${b.x},${b.y})`);
+    group.style.cursor = b.fixed ? "default" : "grab";
+
+    const circle = document.createElementNS(NS, "circle");
+    circle.setAttribute("r", MONSTER_RADIUS);
+    circle.setAttribute("fill", index === selectedBlock ? "#e1a6ff" : "#9a75d1");
+    circle.setAttribute("stroke", index === selectedBlock ? "red" : "#eee");
+    circle.setAttribute("stroke-width", index === selectedBlock ? 12 : 5);
+
+    const text = document.createElementNS(NS, "text");
+    text.textContent = index + 1;
+    text.setAttribute("text-anchor", "middle");
+    text.setAttribute("dominant-baseline", "central");
+    text.setAttribute("font-size", "42");
+    text.setAttribute("font-weight", "bold");
+    text.setAttribute("fill", "white");
+
+    group.appendChild(circle);
+    group.appendChild(text);
+
+    group.addEventListener("pointerdown", e => {
+      e.stopPropagation();
+      selectedBlock = index;
+
+      if (!b.fixed) {
+        dragging = { type: "block", index };
+      }
+
+      draw();
+    });
+
+    blocksGroup.appendChild(group);
+  });
 }
 
-$('pos').onclick=()=>setMode('pos');
-$('ang').onclick=()=>setMode('ang');
-$('blk').onclick=()=>setMode('blk');
+function drawBounces(bounces) {
+  bouncePoints.innerHTML = "";
 
-svg.addEventListener('pointerdown',e=>{
- const p=point(e);
- if(mode==='blk'){
-  if(!pending)return;
-  drag=true;
+  bounces.forEach(p => {
+    const c = document.createElementNS(NS, "circle");
+    c.setAttribute("cx", p.x);
+    c.setAttribute("cy", p.y);
+    c.setAttribute("r", 13);
+    c.setAttribute("fill", "#ffe044");
+    c.setAttribute("stroke", "white");
+    c.setAttribute("stroke-width", 4);
+    bouncePoints.appendChild(c);
+  });
+}
+
+function draw() {
+  const result = tracePath();
+  const str = pointsString(result.points);
+
+  pathBorder.setAttribute("points", str);
+  pathBand.setAttribute("points", str);
+  pathLine.setAttribute("points", str);
+
+  const pathColor = whitePath ? "white" : "black";
+  const extensionColor = whitePath ? "black" : "white";
+
+  pathLine.setAttribute("stroke", pathColor);
+
+  pathBand.setAttribute("stroke", whitePath ? "#ffffff" : "#45d9ff");
+  pathBand.setAttribute("stroke-opacity", "0.5");
+
+  pathBorder.setAttribute("stroke", "white");
+
+  extension.setAttribute("stroke", extensionColor);
+
+  const first = result.points[1] || launch;
+
+  extension.setAttribute("x1", first.x);
+  extension.setAttribute("y1", first.y);
+  extension.setAttribute("x2", first.x + Math.cos(angle * Math.PI / 180) * 1500);
+  extension.setAttribute("y2", first.y + Math.sin(angle * Math.PI / 180) * 1500);
+
+  const handleDistance = 180;
+
+  const hx = launch.x + Math.cos(angle * Math.PI / 180) * handleDistance;
+  const hy = launch.y + Math.sin(angle * Math.PI / 180) * handleDistance;
+
+  setPosition(document.getElementById("launchCircle"), launch.x, launch.y);
+  setPosition(document.getElementById("launchOuter"), launch.x, launch.y);
+  setPosition(document.getElementById("launchMiddle"), launch.x, launch.y);
+  setPosition(document.getElementById("launchInner"), launch.x, launch.y);
+
+  const aimLine = document.getElementById("aimLine");
+  aimLine.setAttribute("x1", launch.x);
+  aimLine.setAttribute("y1", launch.y);
+  aimLine.setAttribute("x2", hx);
+  aimLine.setAttribute("y2", hy);
+
+  setPosition(document.getElementById("aimHandle"), hx, hy);
+
+  drawBounces(result.bounces);
+  drawBlocks();
+}
+
+svg.addEventListener("pointerdown", e => {
+  const p = pointFromEvent(e);
+
+  if (distance(p, launch) < 100) {
+    dragging = { type: "launch" };
+  } else {
+    const hx = launch.x + Math.cos(angle * Math.PI / 180) * 180;
+    const hy = launch.y + Math.sin(angle * Math.PI / 180) * 180;
+
+    if (distance(p, { x: hx, y: hy }) < 45) {
+      dragging = { type: "angle" };
+    }
+  }
+
   svg.setPointerCapture(e.pointerId);
-  moveBlock(p);
-  return;
- }
- if(mode==='pos'){
-  x=p.x;y=p.y;
- }else{
-  angle=quant(Math.atan2(p.y-y,p.x-x));
- }
- drag=true;
- svg.setPointerCapture(e.pointerId);
- draw();
 });
-function moveBlock(p){
- if(!pending)return;
- pending.x=Math.max(B.l+H,Math.min(B.r-H,p.x));
- pending.y=Math.max(B.t+H,Math.min(B.b-H,p.y));
- draw();
-}
-svg.addEventListener('pointermove',e=>{
- if(!drag)return;
- const p=point(e);
- if(mode==='pos'){
-  x=Math.max(B.l,Math.min(B.r,p.x));
-  y=Math.max(B.t,Math.min(B.b,p.y));
- }else if(mode==='ang'){
-  angle=quant(Math.atan2(p.y-y,p.x-x));
- }else moveBlock(p);
- draw();
-});
-svg.addEventListener('pointerup',()=>drag=false);
-svg.addEventListener('pointercancel',()=>drag=false);
 
-$('angle').onchange=()=>{angle=quant(Number($('angle').value)*Math.PI/180);draw()};
-$('slider').oninput=()=>{angle=quant(Number($('slider').value)*Math.PI/180);draw()};
-$('angMinus').onclick=()=>{angle=quant(angle-.3515625*Math.PI/180);draw()};
-$('angPlus').onclick=()=>{angle=quant(angle+.3515625*Math.PI/180);draw()};
+svg.addEventListener("pointermove", e => {
+  if (!dragging) return;
 
-$('minus').onclick=()=>{limit=Math.max(0,limit-1);draw()};
-$('plus').onclick=()=>{limit=Math.min(50,limit+1);draw()};
+  const p = pointFromEvent(e);
 
-$('add').onclick=()=>{
- if(pending)return;
- pending={id:nextId++,x:375,y:1405,fixed:false};
- draw();
-};
-$('confirm').onclick=()=>{
- if(!pending)return;
- pending.fixed=true;
- blocks.push(pending);
- pending=null;
- draw();
-};
-$('delete').onclick=()=>{
- if(pending){
-  pending=null;
- }else if(blocks.length){
-  blocks.pop();
- }
- draw();
-};
+  if (dragging.type === "launch") {
+    launch.x = Math.max(100, Math.min(1100, p.x));
+    launch.y = Math.max(200, Math.min(2400, p.y));
+  }
 
-document.querySelectorAll('[data-toggle]').forEach(b=>{
- b.onclick=()=>{
-  const id=b.dataset.toggle;
-  toggles[id]=!toggles[id];
-  b.textContent=({
-   widthLine:'幅',wall:'壁線',marks:'数字',
-   yellow:'黄色円',extension:'延長線',redLine:'赤線'
-  })[id]+' '+(toggles[id]?'ON':'OFF');
-  b.classList.toggle('active',toggles[id]);
+  if (dragging.type === "angle") {
+    angle = Math.atan2(p.y - launch.y, p.x - launch.x) * 180 / Math.PI;
+  }
+
+  if (dragging.type === "block") {
+    const b = blocks[dragging.index];
+
+    if (b && !b.fixed) {
+      b.x = p.x;
+      b.y = p.y;
+    }
+  }
+
   draw();
- };
 });
 
-$('lineColor').onclick=()=>{
- white=!white;
- $('lineColor').textContent='線：'+(white?'白':'黒');
- draw();
+svg.addEventListener("pointerup", () => {
+  dragging = null;
+});
+
+svg.addEventListener("pointercancel", () => {
+  dragging = null;
+});
+
+document.getElementById("plus").onclick = () => {
+  reflectionLimit = Math.min(30, reflectionLimit + 1);
+  updateCount();
+  draw();
 };
 
-$('reset').onclick=()=>{
- x=591;y=700;angle=rad(63.63);
- blocks=[];pending=null;limit=6;
- draw();
+document.getElementById("minus").onclick = () => {
+  reflectionLimit = Math.max(0, reflectionLimit - 1);
+  updateCount();
+  draw();
 };
 
-function rad(v){return v*Math.PI/180}
-
-/* 画面拡大 */
-const app=$('app'),expanded=$('expanded');
-const expandedContent=$('expandedContent');
-let expandedMode=false;
-
-$('screenshot').onclick=()=>{
- expandedMode=true;
- expandedContent.appendChild(app);
- expanded.classList.add('visible');
- $('back').classList.add('visible');
- $('screenshot').textContent='▤ スクリーンショットを作成';
- $('screenshot').onclick=makeScreenshot;
-};
-$('back').onclick=()=>{
- if(!expandedMode)return;
- expandedMode=false;
- $('app').before(app);
- expanded.classList.remove('visible');
- $('back').classList.remove('visible');
- $('screenshot').textContent='▤ 1画面スクショ・拡大表示';
- $('screenshot').onclick=()=>{
-  expandedMode=true;
-  expandedContent.appendChild(app);
-  expanded.classList.add('visible');
-  $('back').classList.add('visible');
-  $('screenshot').onclick=makeScreenshot;
- };
-};
-
-async function makeScreenshot(){
- if(!window.html2canvas){
-  alert('スクリーンショット機能の読み込みに失敗しました。通信環境を確認してください。');
-  return;
- }
- const canvas=await html2canvas(app,{
-  backgroundColor:'#111c2c',
-  scale:2,
-  useCORS:true
- });
- $('shotImage').src=canvas.toDataURL('image/png');
- $('shotPreview').classList.add('visible');
+function updateCount() {
+  document.getElementById("reflectionCount").textContent =
+    `反射 ${reflectionLimit}回`;
 }
-$('closeShot').onclick=()=>$('shotPreview').classList.remove('visible');
-$('download').onclick=()=>{
- const a=document.createElement('a');
- a.href=$('shotImage').src;
- a.download='monst-reflection-guide.png';
- a.click();
+
+document.getElementById("addBlock").onclick = () => {
+  blocks.push({
+    x: 603,
+    y: 900,
+    fixed: false
+  });
+
+  selectedBlock = blocks.length - 1;
+  draw();
 };
 
+document.getElementById("fixBlock").onclick = () => {
+  if (selectedBlock < 0) return;
+
+  blocks[selectedBlock].fixed =
+    !blocks[selectedBlock].fixed;
+
+  document.getElementById("fixBlock").textContent =
+    blocks[selectedBlock].fixed ? "固定解除" : "固定";
+
+  draw();
+};
+
+document.getElementById("deleteBlock").onclick = () => {
+  if (selectedBlock < 0) return;
+
+  blocks.splice(selectedBlock, 1);
+  selectedBlock = -1;
+
+  document.getElementById("fixBlock").textContent = "固定";
+
+  draw();
+};
+
+document.getElementById("wallToggle").onclick = e => {
+  wallEnabled = !wallEnabled;
+
+  document.getElementById("wall").style.display =
+    wallEnabled ? "block" : "none";
+
+  e.target.textContent = wallEnabled ? "壁 ON" : "壁 OFF";
+  e.target.classList.toggle("active", wallEnabled);
+
+  draw();
+};
+
+document.getElementById("colorToggle").onclick = () => {
+  whitePath = !whitePath;
+  draw();
+};
+
+document.getElementById("reset").onclick = () => {
+  launch = { x: 603, y: 1132 };
+  angle = -45;
+  reflectionLimit = 6;
+  blocks = [];
+  selectedBlock = -1;
+  wallEnabled = true;
+  whitePath = false;
+
+  document.getElementById("wall").style.display = "block";
+  document.getElementById("wallToggle").textContent = "壁 ON";
+  document.getElementById("wallToggle").classList.add("active");
+  document.getElementById("fixBlock").textContent = "固定";
+
+  updateCount();
+  draw();
+};
+
+updateCount();
 draw();
-})();
 </script>
+
 </body>
 </html>
