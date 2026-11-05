@@ -1,1 +1,327 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>モンスト反射練習</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#17191e;color:white;
+ font-family:Arial,sans-serif;overflow:hidden;
+}
+#app{
+ height:100dvh;display:flex;flex-direction:column;
+ align-items:center;gap:7px;padding:7px;
+}
+h2{font-size:17px;margin:2px}
+#game{
+ width:min(calc(100% - 42px),430px);
+ aspect-ratio:418/478;
+ max-height:52dvh;flex-shrink:1;
+ min-height:150px;
+}
+svg{
+ width:100%;height:100%;display:block;
+ background:#252a33;border:2px solid #858d99;
+ border-radius:5px;touch-action:manipulation;
+}
+.row{
+ display:flex;justify-content:center;align-items:center;
+ gap:6px;flex-wrap:wrap;width:100%;
+}
+button{
+ background:#343b49;color:white;
+ border:1px solid #657084;border-radius:7px;
+ padding:8px 12px;font-size:13px;
+}
+button.active{background:#1769a5;border-color:#65bfff}
+.mode{
+ flex:1;max-width:135px;padding:7px 4px;
+ font-size:12px;min-height:32px;
+}
+#settings{
+ width:min(95%,430px);background:#252a33;
+ border-radius:9px;padding:8px;font-size:13px;
+}
+#settings input{width:100%;accent-color:#4aaaff}
+#status{font-size:12px;color:#cbd3df;text-align:center}
+#expanded{
+ display:none;position:fixed;inset:0;z-index:10;
+ background:#17191e;padding:12px;
+ flex-direction:column;align-items:center;gap:10px;
+}
+#expanded #game{
+ width:min(88vw,540px);max-height:75dvh;
+ flex:1;aspect-ratio:418/478;
+}
+#back{
+ position:absolute;bottom:12px;left:12px;
+ min-width:75px;
+}
+#backRight{
+ position:absolute;bottom:12px;right:12px;
+ min-width:75px;
+}
+.small{font-size:11px;color:#aeb8c8}
+</style>
+</head>
+<body>
+
+<div id="app">
+<h2>モンスト反射練習</h2>
+
+<div class="row">
+ <button class="mode active" id="angleMode">角度</button>
+ <button class="mode" id="pointMode">発射点</button>
+ <button class="mode" id="blockMode">ブロック</button>
+</div>
+
+<div id="game">
+<svg id="field" viewBox="0 0 418 478">
+ <rect x="2" y="2" width="414" height="474"
+       fill="#252a33" stroke="#e4e8ee" stroke-width="3"/>
+ <g id="blocks">
+  <rect x="110" y="110" width="110" height="7" rx="2" fill="#929ba8"/>
+  <rect x="270" y="205" width="7" height="90" rx="2" fill="#929ba8"/>
+  <rect x="75" y="355" width="120" height="7" rx="2" fill="#929ba8"/>
+ </g>
+ <polyline id="ray" fill="none" stroke="#ff5555"
+           stroke-width="2.5" stroke-linejoin="round"/>
+ <line id="aim" stroke="#46baff" stroke-width="2"
+       stroke-dasharray="6 5"/>
+ <circle id="launch" r="7" fill="#39aaff" stroke="white" stroke-width="1.5"/>
+ <circle id="launchRing" r="12" fill="none"
+         stroke="#39aaff" stroke-width="1" stroke-dasharray="3 3"/>
+</svg>
+</div>
+
+<div id="settings">
+ <div class="row" style="justify-content:space-between">
+  <span id="settingTitle">発射角度</span>
+  <strong id="angleText">45°</strong>
+ </div>
+ <input id="angle" type="range" min="1" max="359" value="45">
+ <div class="row">
+  <button id="fire">発射</button>
+  <button id="reset">リセット</button>
+  <button id="deleteBlock">最後のブロックを削除</button>
+ </div>
+</div>
+
+<div id="status">角度を調整して発射してください。</div>
+
+<div class="row">
+ <button id="expandBtn">画面を拡大する</button>
+</div>
+<div class="small">青：発射点　赤：反射ルート　灰色：ブロック</div>
+</div>
+
+<div id="expanded">
+ <strong>拡大表示</strong>
+ <button id="back">← 戻る</button>
+ <button id="backRight">戻る →</button>
+</div>
+
+<script>
+const svg=document.getElementById("field");
+const ray=document.getElementById("ray");
+const aim=document.getElementById("aim");
+const launch=document.getElementById("launch");
+const ring=document.getElementById("launchRing");
+const slider=document.getElementById("angle");
+const angleText=document.getElementById("angleText");
+const statusText=document.getElementById("status");
+const blocksGroup=document.getElementById("blocks");
+const game=document.getElementById("game");
+const app=document.getElementById("app");
+const expanded=document.getElementById("expanded");
+
+let mode="angle";
+let px=60,py=420;
+let angle=45;
+let blocks=[
+ {x:110,y:110,w:110,h:7},
+ {x:270,y:205,w:7,h:90},
+ {x:75,y:355,w:120,h:7}
+];
+
+const L=3,R=415,T=3,B=475;
+
+function setMode(m){
+ mode=m;
+ document.querySelectorAll(".mode").forEach(b=>b.classList.remove("active"));
+ document.getElementById(m+"Mode").classList.add("active");
+ const titles={
+  angle:"発射角度",
+  point:"発射点",
+  block:"ブロック配置"
+ };
+ document.getElementById("settingTitle").textContent=titles[m];
+ statusText.textContent={
+  angle:"角度を調整してください。",
+  point:"フィールドをタップして発射点を移動します。",
+  block:"フィールドをタップしてブロックを追加します。"
+ }[m];
+}
+document.getElementById("angleMode").onclick=()=>setMode("angle");
+document.getElementById("pointMode").onclick=()=>setMode("point");
+document.getElementById("blockMode").onclick=()=>setMode("block");
+
+function position(e){
+ const p=svg.createSVGPoint();
+ p.x=e.clientX;p.y=e.clientY;
+ return p.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+svg.addEventListener("click",e=>{
+ const p=position(e);
+ if(mode==="point"){
+  px=Math.max(L+10,Math.min(R-10,p.x));
+  py=Math.max(T+10,Math.min(B-10,p.y));
+ }else if(mode==="block"){
+  const x=Math.max(L,Math.min(R-35,p.x-17));
+  const y=Math.max(T,Math.min(B-18,p.y-4));
+  blocks.push({x,y,w:35,h:8});
+ }
+ draw();
+});
+
+slider.addEventListener("input",()=>{
+ angle=Number(slider.value);
+ angleText.textContent=angle+"°";
+ draw();
+});
+
+function wallHit(x,y,dx,dy){
+ let best=Infinity,nx=0,ny=0;
+ if(dx>0){
+  const t=(R-x)/dx;
+  if(t>0&&t<best){best=t;nx=-1;ny=0;}
+ }
+ if(dx<0){
+  const t=(L-x)/dx;
+  if(t>0&&t<best){best=t;nx=1;ny=0;}
+ }
+ if(dy>0){
+  const t=(B-y)/dy;
+  if(t>0&&t<best){best=t;nx=0;ny=-1;}
+ }
+ if(dy<0){
+  const t=(T-y)/dy;
+  if(t>0&&t<best){best=t;nx=0;ny=1;}
+ }
+ return {t:best,nx,ny};
+}
+
+function blockHit(x,y,dx,dy){
+ let best=Infinity,nx=0,ny=0;
+ for(const b of blocks){
+  const sides=[
+   {t:(b.x-x)/dx,nx:-1,ny:0,ok:dx>0},
+   {t:(b.x+b.w-x)/dx,nx:1,ny:0,ok:dx<0},
+   {t:(b.y-y)/dy,nx:0,ny:-1,ok:dy>0},
+   {t:(b.y+b.h-y)/dy,nx:0,ny:1,ok:dy<0}
+  ];
+  for(const s of sides){
+   if(!s.ok||!Number.isFinite(s.t)||s.t<=0||s.t>=best)continue;
+   const hx=x+dx*s.t;
+   const hy=y+dy*s.t;
+   if(hx>=b.x-0.01&&hx<=b.x+b.w+0.01&&
+      hy>=b.y-0.01&&hy<=b.y+b.h+0.01){
+    best=s.t;nx=s.nx;ny=s.ny;
+   }
+  }
+ }
+ return {t:best,nx,ny};
+}
+
+function calculate(){
+ let rad=angle*Math.PI/180;
+ let dx=Math.cos(rad);
+ let dy=-Math.sin(rad);
+ let x=px,y=py;
+ let points=[[x,y]];
+ let count=0;
+ for(let i=0;i<30;i++){
+  const wh=wallHit(x,y,dx,dy);
+  const bh=blockHit(x,y,dx,dy);
+  const hit=bh.t<wh.t?bh:wh;
+  if(!Number.isFinite(hit.t)||hit.t===Infinity)break;
+  x+=dx*hit.t;
+  y+=dy*hit.t;
+  points.push([x,y]);
+  count++;
+  if(hit.nx)dx=-dx;
+  if(hit.ny)dy=-dy;
+  x+=dx*0.03;
+  y+=dy*0.03;
+ }
+ return {points,count};
+}
+
+function draw(){
+ launch.setAttribute("cx",px);
+ launch.setAttribute("cy",py);
+ ring.setAttribute("cx",px);
+ ring.setAttribute("cy",py);
+
+ const rad=angle*Math.PI/180;
+ aim.setAttribute("x1",px);
+ aim.setAttribute("y1",py);
+ aim.setAttribute("x2",px+Math.cos(rad)*45);
+ aim.setAttribute("y2",py-Math.sin(rad)*45);
+
+ blocksGroup.innerHTML="";
+ for(const b of blocks){
+  const r=document.createElementNS("http://www.w3.org/2000/svg","rect");
+  r.setAttribute("x",b.x);
+  r.setAttribute("y",b.y);
+  r.setAttribute("width",b.w);
+  r.setAttribute("height",b.h);
+  r.setAttribute("rx",2);
+  r.setAttribute("fill","#929ba8");
+  blocksGroup.appendChild(r);
+ }
+
+ const result=calculate();
+ ray.setAttribute("points",result.points.map(p=>p.join(",")).join(" "));
+ document.getElementById("count").textContent=result.count;
+ statusText.textContent="予測反射回数："+result.count+"回";
+}
+
+document.getElementById("fire").onclick=()=>{
+ const result=calculate();
+ statusText.textContent="発射！ 反射回数："+result.count+"回";
+};
+
+document.getElementById("reset").onclick=()=>{
+ px=60;py=420;angle=45;
+ slider.value=45;
+ angleText.textContent="45°";
+ draw();
+};
+
+document.getElementById("deleteBlock").onclick=()=>{
+ if(blocks.length)blocks.pop();
+ draw();
+};
+
+document.getElementById("expandBtn").onclick=()=>{
+ expanded.style.display="flex";
+ expanded.appendChild(game);
+};
+
+function back(){
+ expanded.style.display="none";
+ app.insertBefore(game,document.getElementById("settings"));
+}
+document.getElementById("back").onclick=back;
+document.getElementById("backRight").onclick=back;
+
+draw();
+</script>
+</body>
+</html>
+
